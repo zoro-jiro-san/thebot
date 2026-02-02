@@ -59,6 +59,38 @@ await page.goto('https://example.com');
 await browser.disconnect();
 ```
 
+### Usage with Playwright
+
+**Important**: Always use try/finally and call `process.exit()` to ensure scripts terminate properly.
+
+```javascript
+const { chromium } = require('playwright');
+const { execSync } = require('child_process');
+
+(async () => {
+  // Get browser IP (Chrome CDP requires IP, not hostname)
+  const browserIP = execSync('getent hosts browser | awk \'{print $1}\'').toString().trim();
+
+  let browser;
+  try {
+    browser = await chromium.connectOverCDP(`http://${browserIP}:9222`);
+    const context = browser.contexts()[0] || await browser.newContext();
+    const page = context.pages()[0] || await context.newPage();
+
+    await page.goto('https://example.com');
+    // ... perform actions
+    await page.screenshot({ path: 'workspace/screenshot.png' });
+
+    console.log('Done!');
+  } catch (error) {
+    console.error('Error:', error.message);
+  } finally {
+    if (browser) await browser.close();
+    process.exit(0);  // Always exit to prevent hanging
+  }
+})();
+```
+
 ## Command Line Tools
 
 ### Git
